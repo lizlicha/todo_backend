@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Globals:
+  Function:
+    Runtime: python3.9
+    Timeout: 30
+    Handler: app.lambda_handler
+    Environment:
+      Variables:
+        DB_HOST: !Ref DBHost
+        DB_USER: !Ref DBUser
+        DB_PASSWORD: !Ref DBPassword
+        DB_NAME: !Ref DBName
+Resources:
+  GetTodosFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: get_todos.lambda_handler
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        GetTodosApi:
+          Type: Api
+          Properties:
+            Path: /todos
+            Method: GET
+
+  # 環境変数用のパラメータ
+  DBHost:
+    Type: String
+    Default: localhost
+  DBUser:
+    Type: String
+    Default: admin
+  DBPassword:
+    Type: String
+    Default: password
+  DBName:
+    Type: String
+    Default: todos
+
+Outputs:
+  GetTodosApiUrl:
+    Description: "API Gateway endpoint URL for Prod stage for Get Todos function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/todos"
