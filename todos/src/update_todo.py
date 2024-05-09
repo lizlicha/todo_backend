@@ -1,4 +1,4 @@
-# src/queries/get_todos.py
+# src/commands/update_todo.py
 import json
 import pymysql
 import os
@@ -9,6 +9,16 @@ db_password = os.environ['DB_PASSWORD']
 db_name = os.environ['DB_NAME']
 
 def lambda_handler(event, context):
+    body = json.loads(event['body'])
+    todo_id = body['id']
+    user_name = body['user_name']
+    title = body['title']
+    description = body['description']
+    tag1 = body['tag1']
+    tag2 = body['tag2']
+    tag3 = body['tag3']
+    completed = body['completed']
+
     connection = pymysql.connect(
         host=db_host,
         user=db_user,
@@ -18,27 +28,13 @@ def lambda_handler(event, context):
     
     try:
         with connection.cursor() as cursor:
-            sql = "SELECT id, user_name, title, description, tag1, tag2, tag3, completed FROM todos"
-            cursor.execute(sql)
-            result = cursor.fetchall()
-        
-        todos = []
-        for row in result:
-            todo = {
-                'id': row[0],
-                'user_name': row[1],
-                'title': row[2],
-                'description': row[3],
-                'tag1': row[4],
-                'tag2': row[5],
-                'tag3': row[6],
-                'completed': row[7]
-            }
-            todos.append(todo)
+            sql = "UPDATE todos SET user_name=%s, title=%s, description=%s, tag1=%s, tag2=%s, tag3=%s, completed=%s WHERE id=%s"
+            cursor.execute(sql, (user_name, title, description, tag1, tag2, tag3, completed, todo_id))
+            connection.commit()
         
         return {
             'statusCode': 200,
-            'body': json.dumps(todos, ensure_ascii=False),
+            'body': json.dumps({'message': 'Todo updated successfully'}, ensure_ascii=False),
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'

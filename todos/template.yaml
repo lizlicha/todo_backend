@@ -4,13 +4,20 @@ Globals:
   Function:
     Runtime: python3.9
     Timeout: 30
-    Handler: app.lambda_handler
     Environment:
       Variables:
-        DB_HOST: !Ref DBHost
-        DB_USER: !Ref DBUser
-        DB_PASSWORD: !Ref DBPassword
-        DB_NAME: !Ref DBName
+        DB_HOST: wp-rds-database.cxhyds0avgup.ap-northeast-1.rds.amazonaws.com
+        DB_NAME: todo_db
+        DB_USER: todo_admin
+        DB_PASSWORD: todotodo1117
+    VpcConfig:
+      SubnetIds:
+        - subnet-0e9a247f0c49c5fb0
+        - subnet-088db5ae049bb9e92
+      SecurityGroupIds:
+        - sg-0cee7972dcb7f1b32
+
+
 Resources:
   GetTodosFunction:
     Type: AWS::Serverless::Function
@@ -25,22 +32,55 @@ Resources:
           Properties:
             Path: /todos
             Method: GET
+            RestApiId: !Ref TodoApi
 
-  # 環境変数用のパラメータ
-  DBHost:
-    Type: String
-    Default: localhost
-  DBUser:
-    Type: String
-    Default: admin
-  DBPassword:
-    Type: String
-    Default: password
-  DBName:
-    Type: String
-    Default: todos
+  AddTodoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: add_todo.lambda_handler
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        AddTodoApi:
+          Type: Api
+          Properties:
+            Path: /todos
+            Method: POST
+            RestApiId: !Ref TodoApi
+
+  UpdateTodoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: update_todo.lambda_handler
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        UpdateTodoApi:
+          Type: Api
+          Properties:
+            Path: /todos
+            Method: PUT
+            RestApiId: !Ref TodoApi
+
+  TodoApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: TodoApi
+      StageName: Prod
+      Cors:
+        AllowMethods: "'GET,POST,PUT,OPTIONS'"
+        AllowHeaders: "'Content-Type'"
+        AllowOrigin: "'*'"
 
 Outputs:
   GetTodosApiUrl:
     Description: "API Gateway endpoint URL for Prod stage for Get Todos function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/todos"
+    Value: !Sub "https://${TodoApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/todos"
+  AddTodoApiUrl:
+    Description: "API Gateway endpoint URL for Prod stage for Add Todo function"
+    Value: !Sub "https://${TodoApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/todos"
+  UpdateTodoApiUrl:
+    Description: "API Gateway endpoint URL for Prod stage for Update Todo function"
+    Value: !Sub "https://${TodoApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/todos"
