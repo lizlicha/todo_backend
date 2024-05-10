@@ -1,4 +1,3 @@
-# src/commands/update_todo.py
 import json
 import pymysql
 import os
@@ -10,14 +9,38 @@ db_name = os.environ['DB_NAME']
 
 def lambda_handler(event, context):
     body = json.loads(event['body'])
-    todo_id = body['id']
-    user_name = body['user_name']
-    title = body['title']
-    description = body['description']
-    tag1 = body['tag1']
-    tag2 = body['tag2']
-    tag3 = body['tag3']
-    completed = body['completed']
+    print(body)
+    todo_id = body.pop('id', None)
+
+    if not todo_id:
+        return {
+            'statusCode': 400,
+            'body': json.dumps({'error': 'Todo IDが必要です'}, ensure_ascii=False),
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
+        }
+
+    fields = []
+    values = []
+
+    for key, value in body.items():
+        fields.append(f"{key}=%s")
+        values.append(value)
+
+    if not fields:
+        return {
+            'statusCode': 400,
+            'body': json.dumps({'error': '更新する項目が必要です'}, ensure_ascii=False),
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
+        }
+
+    values.append(todo_id)
+    set_clause = ", ".join(fields)
 
     connection = pymysql.connect(
         host=db_host,
@@ -25,16 +48,16 @@ def lambda_handler(event, context):
         password=db_password,
         database=db_name
     )
-    
+
     try:
         with connection.cursor() as cursor:
-            sql = "UPDATE todos SET user_name=%s, title=%s, description=%s, tag1=%s, tag2=%s, tag3=%s, completed=%s WHERE id=%s"
-            cursor.execute(sql, (user_name, title, description, tag1, tag2, tag3, completed, todo_id))
+            sql = f"UPDATE todos SET {set_clause} WHERE id=%s"
+            cursor.execute(sql, values)
             connection.commit()
         
         return {
             'statusCode': 200,
-            'body': json.dumps({'message': 'Todo updated successfully'}, ensure_ascii=False),
+            'body': json.dumps({'message': 'Todoが正常に更新されました'}, ensure_ascii=False),
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'

@@ -18,7 +18,7 @@ def lambda_handler(event, context):
     
     try:
         with connection.cursor() as cursor:
-            sql = "SELECT id, user_name, title, description, tag1, tag2, tag3, completed FROM todos"
+            sql = "SELECT id, user_name, title, description, tag1, tag2, tag3, completed FROM todos WHERE completed = false"
             cursor.execute(sql)
             result = cursor.fetchall()
         
